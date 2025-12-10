@@ -3,3 +3,4 @@ __pycache__/
 data/
 .streamlit/secrets.toml
 .DS_Store
+.env

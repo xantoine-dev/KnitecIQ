@@ -1,0 +1,47 @@
+/* main/static/css/style.css */
+
+/* Example brand color (completely hypothetical) */
+:root {
+    --knitec-primary: #08B2DA;
+    --knitec-secondary: #01650b81;
+  }
+  
+  /* Override some Bootstrap classes, or add custom classes */
+  .navbar {
+    background-color: #ffffff !important;
+  }
+  .navbar-brand img {
+    /* If the client has a wide logo, you can adjust the size here */
+    height: 40px;
+  }
+  
+  /*  custom button styling */
+  .btn-knitec {
+    background-color: var(--knitec-primary);
+    border-color: var(--knitec-primary);
+    color: #ffffff;
+  }
+  .btn-knitec:hover {
+    background-color: #ff5500;
+    border-color: #ff5500;
+  }
+  .hero-section {
+    background: url("../images/home_background.png") no-repeat center center;
+    background-size: cover;
+    color: #1d9dad;
+    padding: 100px 0;
+    text-align: center;
+  }
+  .btn-knitec-secondary {
+    background-color: var(--knitec-secondary);
+    border-color: var(--knitec-primary);
+    color: #ffffff;
+  }
+  .btn-knitec-secondary:hover {
+    background-color: #ff5500;
+    border-color: #ff5500;
+  }
+  body {
+    font-family: 'Abel', sans-serif;
+  }
+  

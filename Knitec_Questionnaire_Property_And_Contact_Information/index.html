@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knitec | Property &amp; Contact Information</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Abel&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="static/css/style.css">
+  <style>
+    :root {
+      --text-dark: #0f2f35;
+      --surface: #f3f7f9;
+      --card: #ffffff;
+      --border: #d9e4ea;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: var(--surface);
+      color: var(--text-dark);
+    }
+    .page-shell {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+    }
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-mark img {
+      height: 48px;
+      width: auto;
+    }
+    .brand-mark span {
+      font-size: 20px;
+      letter-spacing: 0.08em;
+      color: var(--text-dark);
+      text-transform: uppercase;
+    }
+    .hero-section {
+      position: relative;
+      border-radius: 18px;
+      overflow: hidden;
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(8, 178, 218, 0.82), rgba(1, 101, 11, 0.55));
+      mix-blend-mode: multiply;
+    }
+    .hero-content {
+      position: relative;
+      text-align: center;
+      color: #ffffff;
+      padding: 48px 24px;
+      max-width: 720px;
+    }
+    .hero-content h1 {
+      margin: 0 0 12px;
+      font-size: 32px;
+      letter-spacing: 0.04em;
+    }
+    .hero-content p {
+      margin: 0;
+      font-size: 16px;
+      opacity: 0.95;
+    }
+    .form-wrapper {
+      margin-top: -60px;
+      padding: 0 12px 48px;
+    }
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 18px 50px rgba(15, 47, 53, 0.08);
+      padding: 28px;
+    }
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(8, 178, 218, 0.12);
+      color: var(--knitec-primary);
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .form-title {
+      margin: 0 0 18px;
+      font-size: 24px;
+      color: var(--text-dark);
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px 20px;
+    }
+    label {
+      display: block;
+      font-size: 14px;
+      color: #1f3a40;
+      margin-bottom: 6px;
+      letter-spacing: 0.01em;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      background: #fdfefe;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--knitec-primary);
+      box-shadow: 0 0 0 3px rgba(8, 178, 218, 0.18);
+    }
+    .actions {
+      margin-top: 22px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 22px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    button.btn-knitec {
+      box-shadow: 0 12px 30px rgba(8, 178, 218, 0.25);
+    }
+    button:hover {
+      transform: translateY(-1px);
+    }
+    @media (max-width: 640px) {
+      .page-shell {
+        padding: 16px;
+      }
+      .hero-content h1 {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <header>
+      <div class="brand-mark">
+        <img src="static/images/logo.png" alt="Knitec logo">
+      </div>
+    </header>
+
+    <section class="hero-section">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <h1>Property &amp; Contact Information</h1>
+      </div>
+    </section>
+
+    <section class="form-wrapper">
+      <div class="form-card">
+        <div class="section-label">Section 1</div>
+        <h2 class="form-title">Property &amp; Contact Information</h2>
+        <form>
+          <div class="form-grid">
+            <div>
+              <label for="name">Name</label>
+              <input type="text" id="name" name="name" placeholder="Jane Doe" required>
+            </div>
+            <div>
+              <label for="address">Address</label>
+              <input type="text" id="address" name="address" placeholder="123 Main St" required>
+            </div>
+            <div>
+              <label for="city">City</label>
+              <input type="text" id="city" name="city" placeholder="Seattle" required>
+            </div>
+            <div>
+              <label for="state">State</label>
+              <input type="text" id="state" name="state" placeholder="WA" required>
+            </div>
+            <div>
+              <label for="zip">Zip</label>
+              <input type="text" id="zip" name="zip" placeholder="98101" required>
+            </div>
+            <div>
+              <label for="contact">Contact</label>
+              <input type="text" id="contact" name="contact" placeholder="Primary phone or email" required>
+            </div>
+            <div>
+              <label for="contact2">Contact 2</label>
+              <input type="text" id="contact2" name="contact2" placeholder="Secondary phone or email">
+            </div>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn-knitec">Submit</button>
+            <button type="reset" class="btn-knitec-secondary">Clear</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
