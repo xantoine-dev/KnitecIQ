@@ -2,70 +2,63 @@
 
 ## Overview
 
-This project is a Streamlit-based chat application that interacts with the Gemini AI model, allowing users to engage in conversations with an artificial intelligence assistant. The application stores chat history, allowing users to revisit and continue previous conversations.
-
-<div align="center"><img src="docs/gemini-chatbot.gif" width="800"></div>
+This Streamlit app collects property/contact info and then guides the user through a KniTec IQ chat questionnaire backed by Gemini. It stores chat history for later recall.
 
 ## Getting Started
 
 ### Dependencies
 
-This code uses the following libraries:
+- `streamlit`
+- `google-generativeai`
+- `streamlit-authenticator`
+- `joblib`, `python-dotenv`
 
-- `streamlit`: for building the user interface. 
-- `gemini`: for chat  
-- Gemini API key: Get it from [Google AI Studio](https://ai.google.dev/tutorials/setup?hl=tr)
+### Setup
 
-
-### Usage
-
-Follow these steps to set up and run the project:
-
-1. Create a virtual environment:
+1) Create and activate a virtual environment:
 ```
-python3 -m venv my_env
-source my_env/bin/activate 
-.\my_env\Scripts\activate 
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
-2. Install dependencies:
+2) Install dependencies:
 ```
 pip install -r requirements.txt
 ```
 
-3. Run the Streamlit server:
+3) Secrets and keys:
+- Create `.streamlit/secrets.toml` with `auth` credentials (see example in contact_info/app.py expectations).
+- Add `GOOGLE_API_KEY=...` to `.env` in the repo root. `.env` is git-ignored.
+
+### Run
+
+Use the multipage entry (includes contact intake then chat):
 ```
-streamlit run app_chat.py
+streamlit run app.py
 ```
+The chat page is also reachable via `pages/02_chat.py` inside the same session; running `app_chat.py` alone skips the intake page.
 
-4. Access the application in your browser at http://localhost:8501.
-
-5. Start chatting with the assistant!
-
-## Repository Structure
+### Repository Structure (key files)
 ```
-repository/
-├── app_chat.py               # the code and UI integrated together live here
-├── requirements.txt     # the python packages needed to run locally
-├── .streamlit/
-│   └── config.toml      # theme info for the UI
-├── data/                # folder for saved chat messages 
-├── docs/                # preview for github
-
+app.py                       # multipage entry: contact intake then chat
+app_chat.py                  # chat experience (used by pages/02_chat.py)
+contact_info/                # modular contact intake page + assets
+pages/02_chat.py             # wrapper to run chat as a page
+assets/                      # shared assets (e.g., avatar, prompts)
+data/                        # chat history (git-ignored)
+.streamlit/                  # config.toml and local secrets.toml (git-ignored)
+.env                         # GOOGLE_API_KEY (git-ignored)
 ```
 
 ## How it Works
 
-The app as follows:
+1. User signs in via `streamlit-authenticator` (secrets-driven).
+2. Contact intake form validates required fields (name, address, city, state, zip, contact) and formats (2-letter state, ZIP/ZIP+4, email/phone).
+3. On successful submit, user is redirected to the chat page.
+4. Chat uses Gemini with the KniTec prompt, saving history per session in `data/`.
+5. Past chat list is pruned automatically if history files are missing.
 
-1. The user enters a question in the input field.
-
-2. User messages are sent to the Gemini model for processing.
-
-3. The user's input, along with the chat history, is used to generate a response.
-
-4. The Gemini model generates a response based on the patterns it learned during training.
-
-5. The application saves chat messages and Gemini AI chat history to files for later retrieval.
-
-6. A new chat is created if the user initiates a conversation that hasn't been stored before, or user can go back to past chats.
+## Validation (manual)
+- Contact form: verified required-field enforcement, state format (2 letters), ZIP/ZIP+4, email/phone validation, and clear/submit behaviors.
+- Navigation: submit triggers redirect to chat within the same Streamlit session.
+- Chat: message send/receive works with stored histories; past chats prunes missing sessions.
