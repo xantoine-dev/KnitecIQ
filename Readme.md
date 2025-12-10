@@ -32,22 +32,35 @@ pip install -r requirements.txt
 
 ### Run
 
-Use the multipage entry (includes contact intake then chat):
+Primary entry (includes contact intake then chat):
+```
+streamlit run Contact_Information.py
+```
+Alternate multipage entry:
 ```
 streamlit run app.py
 ```
-The chat page is also reachable via `pages/02_chat.py` inside the same session; running `app_chat.py` alone skips the intake page.
+Direct chat (skips intake):
+```
+streamlit run app_chat.py
+```
+Chat page inside the same session:
+```
+streamlit run pages/02_chat.py
+```
 
 ### Repository Structure (key files)
 ```
-app.py                       # multipage entry: contact intake then chat
-app_chat.py                  # chat experience (used by pages/02_chat.py)
-contact_info/                # modular contact intake page + assets
-pages/02_chat.py             # wrapper to run chat as a page
-assets/                      # shared assets (e.g., avatar, prompts)
-data/                        # chat history (git-ignored)
-.streamlit/                  # config.toml and local secrets.toml (git-ignored)
-.env                         # GOOGLE_API_KEY (git-ignored)
+Contact_Information.py        # primary entry: contact intake then chat
+app.py                        # alternate multipage entry
+app_chat.py                   # chat experience (used by pages wrappers)
+contact_info/                 # modular contact intake page + assets
+pages/02_Chat_with_KnitecIQ.py# page wrapper to run chat as a page
+pages/02_chat.py              # (alternate) page wrapper to run chat as a page
+assets/                       # shared assets (e.g., avatar, prompts)
+data/                         # chat history (git-ignored)
+.streamlit/                   # config.toml and local secrets.toml (git-ignored)
+.env                          # GOOGLE_API_KEY (git-ignored)
 ```
 
 ## How it Works
