@@ -63,7 +63,7 @@ AI_AVATAR_ICON = str(Path('assets/Knitec_IQ_avatar.png'))
 
 
 def inject_chat_styles() -> None:
-    """Inject a calmer, Apple-leaning visual system for chat and sidebar."""
+    """Inject a calmer visual system for chat and sidebar."""
     st.markdown(
         """
         <style>

@@ -121,7 +121,6 @@ def render_hero() -> None:
           <div class="hero-overlay"></div>
           <div class="hero-content">
             <h1>Property &amp; Contact Information</h1>
-            <p>Capture the essentials in one place to keep records aligned with the Knitec standard.</p>
           </div>
         </section>
         """,
@@ -132,12 +131,6 @@ def render_hero() -> None:
 def render_form() -> None:
     st.markdown('<div class="form-wrapper">', unsafe_allow_html=True)
     with st.form("knitec_contact_form"):
-        st.markdown('<div class="section-label">Section 1</div>', unsafe_allow_html=True)
-        st.markdown(
-            '<h2 class="form-title">Property &amp; Contact Information</h2>',
-            unsafe_allow_html=True,
-        )
-
         col_a, col_b = st.columns(2, gap="medium")
         values = {}
 
