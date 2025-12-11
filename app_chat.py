@@ -1,11 +1,11 @@
 import time
 import os
-import streamlit as st
-import google.generativeai as genai
 import datetime
 from pathlib import Path
+
+import streamlit as st
 from dotenv import load_dotenv
-import google.api_core.exceptions as g_exceptions
+from openai import OpenAI, OpenAIError
 import streamlit_authenticator as stauth
 
 # --- Authentication gate ----------------------------------------------------
@@ -50,13 +50,14 @@ else:
 # ---------------------------------------------------------------------------
 
 load_dotenv()
-GOOGLE_API_KEY = st.secrets.get('GOOGLE_API_KEY') or os.environ.get('GOOGLE_API_KEY')
-if not GOOGLE_API_KEY:
-    st.error('GOOGLE_API_KEY is not set; please configure your environment (Streamlit secrets or env var).')
+OPENAI_API_KEY = st.secrets.get('OPENAI_API_KEY') or os.environ.get('OPENAI_API_KEY')
+if not OPENAI_API_KEY:
+    st.error('OPENAI_API_KEY is not set; please configure your environment (Streamlit secrets or env var).')
     st.stop()
-genai.configure(api_key=GOOGLE_API_KEY)
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL') or 'gpt-4.1-nano'
+client = OpenAI(api_key=OPENAI_API_KEY)
 
-MODEL_ROLE = 'ai'
+MODEL_ROLE = 'assistant'
 AI_AVATAR_ICON = str(Path('assets/Knitec_IQ_avatar.png'))
 
 # Session-scoped chat store keyed by chat_id; isolates chats per browser session.
@@ -68,8 +69,8 @@ if 'chat_title' not in st.session_state:
     st.session_state.chat_title = 'New Chat'
 if 'messages' not in st.session_state:
     st.session_state.messages = []
-if 'gemini_history' not in st.session_state:
-    st.session_state.gemini_history = []
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
 
 
 def inject_chat_styles() -> None:
@@ -207,12 +208,12 @@ def _load_chat(chat_id: str) -> None:
         st.session_state.chat_id = chat_id
         st.session_state.chat_title = chat.get('title') or default_chat_title(chat_id)
         st.session_state.messages = list(chat.get('messages', []))
-        st.session_state.gemini_history = list(chat.get('gemini_history', []))
+        st.session_state.chat_history = list(chat.get('chat_history', []))
     else:
         st.session_state.chat_id = chat_id
         st.session_state.chat_title = default_chat_title(chat_id)
         st.session_state.messages = []
-        st.session_state.gemini_history = []
+        st.session_state.chat_history = []
 
 
 _load_chat(st.session_state.chat_id)
@@ -244,7 +245,7 @@ with st.sidebar:
     st.session_state.chat_store[st.session_state.chat_id] = dict(
         title=st.session_state.chat_title,
         messages=st.session_state.messages,
-        gemini_history=st.session_state.gemini_history,
+        chat_history=st.session_state.chat_history,
     )
 
 st.write('# Chat with Knitec IQ')
@@ -260,15 +261,6 @@ except Exception as exc:
     st.warning(f'Could not read prompt file, using fallback. ({exc})')
     SYSTEM_PROMPT = 'You are Knitec IQ assistant.'
 
-# Use requested Gemini model
-st.session_state.model = genai.GenerativeModel(
-    'gemini-2.5-flash',
-    system_instruction=SYSTEM_PROMPT,
-)
-st.session_state.chat = st.session_state.model.start_chat(
-    history=st.session_state.gemini_history,
-)
-
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
     with st.chat_message(
@@ -283,6 +275,7 @@ if prompt := st.chat_input('Your message here...'):
     if st.session_state.chat_id not in st.session_state.chat_store:
         if not st.session_state.chat_title or st.session_state.chat_title == 'New Chat':
             st.session_state.chat_title = friendly_title_from_prompt(prompt, st.session_state.chat_id)
+    st.session_state.chat_history.append({'role': 'user', 'content': prompt})
     # Display user message in chat message container
     with st.chat_message('user'):
         st.markdown(prompt)
@@ -295,17 +288,15 @@ if prompt := st.chat_input('Your message here...'):
     )
     ## Send message to AI
     try:
-        response = st.session_state.chat.send_message(
-            prompt,
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[{'role': 'system', 'content': SYSTEM_PROMPT}] + st.session_state.chat_history,
             stream=True,
+            # Request faster routing when available.
+            service_tier='priority',
         )
-    except g_exceptions.ResourceExhausted as exc:
-        retry_secs = getattr(getattr(exc, 'retry_delay', None), 'seconds', None)
-        wait_hint = f' Please retry after ~{retry_secs}s.' if retry_secs else ''
-        st.error(f'Gemini rate limit hit.{wait_hint}')
-        response = None
-    except g_exceptions.GoogleAPIError as exc:
-        st.error(f'Gemini API error: {exc}')
+    except OpenAIError as exc:
+        st.error(f'OpenAI API error: {exc}')
         response = None
 
     if response is None:
@@ -324,35 +315,34 @@ if prompt := st.chat_input('Your message here...'):
         ):
             message_placeholder = st.empty()
             full_response = ''
-            assistant_response = response
             # Streams in a chunk at a time
             for chunk in response:
-                # Simulate stream of chunk
-                text = getattr(chunk, 'text', '') or ''
-                if not text:
+                delta = chunk.choices[0].delta
+                content_piece = getattr(delta, 'content', None) or ''
+                if not content_piece:
                     continue
-                for ch in text.split(' '):
-                    full_response += ch + ' '
-                    time.sleep(0.05)
-                    # Rewrites with a cursor at end
-                    message_placeholder.write(full_response + '▌')
-            # Write full message with placeholder
+                if isinstance(content_piece, str):
+                    text_piece = content_piece
+                else:
+                    text_piece = ''.join(getattr(part, 'text', '') or str(part) for part in content_piece)
+                full_response += text_piece
+                message_placeholder.write(full_response + '▌')
             message_placeholder.write(full_response)
 
         # Add assistant response to chat history
         st.session_state.messages.append(
             dict(
                 role=MODEL_ROLE,
-                content=st.session_state.chat.history[-1].parts[0].text,
+                content=full_response,
                 avatar=AI_AVATAR_ICON,
             )
         )
-        st.session_state.gemini_history = st.session_state.chat.history
+        st.session_state.chat_history.append({'role': 'assistant', 'content': full_response})
 
     st.session_state.chat_store[st.session_state.chat_id] = dict(
         title=st.session_state.chat_title,
         messages=st.session_state.messages,
-        gemini_history=st.session_state.gemini_history,
+        chat_history=st.session_state.chat_history,
     )
 
 st.markdown(
