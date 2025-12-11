@@ -207,8 +207,8 @@ def _load_chat(chat_id: str) -> None:
     if chat:
         st.session_state.chat_id = chat_id
         st.session_state.chat_title = chat.get('title') or default_chat_title(chat_id)
-        st.session_state.messages = list(chat.get('messages', []))
-        st.session_state.chat_history = list(chat.get('chat_history', []))
+        st.session_state.messages = list(chat.get('messages', []))  # copy to avoid aliasing
+        st.session_state.chat_history = list(chat.get('chat_history', []))  # copy to avoid aliasing
     else:
         st.session_state.chat_id = chat_id
         st.session_state.chat_title = default_chat_title(chat_id)
@@ -218,34 +218,30 @@ def _load_chat(chat_id: str) -> None:
 
 _load_chat(st.session_state.chat_id)
 
-# Sidebar allows a list of past chats (per-session only)
+# Sidebar: past chats disabled for now (per-session only) to avoid navigation bugs.
+# TODO: Re-enable a reliable past-chats selector once state sync issues are resolved.
 with st.sidebar:
-    st.write('# Past Chats')
-    past_chats = {cid: data.get('title', default_chat_title(cid)) for cid, data in st.session_state.chat_store.items()}
-    select_options = [st.session_state.chat_id] + [cid for cid in past_chats if cid != st.session_state.chat_id]
-    selected_chat = st.selectbox(
-        label='Pick a past chat',
-        options=select_options,
-        format_func=lambda x: past_chats.get(x, default_chat_title(x)),
-    )
-    if selected_chat != st.session_state.chat_id:
-        _load_chat(selected_chat)
-
+    st.write('# Chat')
     if st.button('Start new chat'):
         fresh_chat_id = f'{time.time()}'
+        st.session_state.chat_store[st.session_state.chat_id] = dict(
+            title=st.session_state.chat_title,
+            messages=list(st.session_state.messages),
+            chat_history=list(st.session_state.chat_history),
+        )
         _load_chat(fresh_chat_id)
 
-    new_title = st.text_input(
+    st.text_input(
         'Chat title',
         value=st.session_state.chat_title,
         key='chat_title_input',
+        disabled=True,
+        help='Past chats navigation is temporarily disabled.',
     )
-    if new_title != st.session_state.chat_title:
-        st.session_state.chat_title = new_title
     st.session_state.chat_store[st.session_state.chat_id] = dict(
         title=st.session_state.chat_title,
-        messages=st.session_state.messages,
-        chat_history=st.session_state.chat_history,
+        messages=list(st.session_state.messages),
+        chat_history=list(st.session_state.chat_history),
     )
 
 st.write('# Chat with Knitec IQ')
@@ -341,8 +337,8 @@ if prompt := st.chat_input('Your message here...'):
 
     st.session_state.chat_store[st.session_state.chat_id] = dict(
         title=st.session_state.chat_title,
-        messages=st.session_state.messages,
-        chat_history=st.session_state.chat_history,
+        messages=list(st.session_state.messages),
+        chat_history=list(st.session_state.chat_history),
     )
 
 st.markdown(
