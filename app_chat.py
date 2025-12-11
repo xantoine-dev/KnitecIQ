@@ -1,6 +1,5 @@
 import time
 import os
-import joblib
 import streamlit as st
 import google.generativeai as genai
 import datetime
@@ -57,9 +56,20 @@ if not GOOGLE_API_KEY:
     st.stop()
 genai.configure(api_key=GOOGLE_API_KEY)
 
-new_chat_id = f'{time.time()}'
 MODEL_ROLE = 'ai'
 AI_AVATAR_ICON = str(Path('assets/Knitec_IQ_avatar.png'))
+
+# Session-scoped chat store keyed by chat_id; isolates chats per browser session.
+if 'chat_store' not in st.session_state:
+    st.session_state.chat_store = {}
+if 'chat_id' not in st.session_state:
+    st.session_state.chat_id = f'{time.time()}'
+if 'chat_title' not in st.session_state:
+    st.session_state.chat_title = 'New Chat'
+if 'messages' not in st.session_state:
+    st.session_state.messages = []
+if 'gemini_history' not in st.session_state:
+    st.session_state.gemini_history = []
 
 
 def inject_chat_styles() -> None:
@@ -166,13 +176,6 @@ def inject_chat_styles() -> None:
         unsafe_allow_html=True,
     )
 
-def safe_dump(obj, dest_path: str) -> None:
-    """Write with a temp file and atomic replace to avoid partial writes."""
-    target = Path(dest_path)
-    tmp = target.with_suffix(target.suffix + '.tmp')
-    joblib.dump(obj, tmp)
-    tmp.replace(target)
-
 
 def default_chat_title(chat_id: str) -> str:
     """Fallback title using timestamp if chat_id is a timestamp; otherwise use generic."""
@@ -195,61 +198,41 @@ def friendly_title_from_prompt(prompt: str, chat_id: str) -> str:
     return snippet
 
 
-def prune_past_chats(chats: dict) -> dict:
-    """Drop any chat IDs that no longer have saved history files."""
-    pruned = {}
-    changed = False
-    for chat_id, title in chats.items():
-        st_path = Path(f'data/{chat_id}-st_messages')
-        gem_path = Path(f'data/{chat_id}-gemini_messages')
-        if st_path.exists() and gem_path.exists():
-            pruned[chat_id] = title
-        else:
-            changed = True
-    if changed:
-        safe_dump(pruned, 'data/past_chats_list')
-    return pruned
-
-Path('data').mkdir(exist_ok=True)
-
-# Load past chats (if available)
-try:
-    past_chats: dict = joblib.load('data/past_chats_list')
-except FileNotFoundError:
-    past_chats = {}
-except Exception as exc:
-    st.warning(f'Past chat list was unreadable, starting fresh. ({exc})')
-    past_chats = {}
-past_chats = prune_past_chats(past_chats)
-
 inject_chat_styles()
 
-# Sidebar allows a list of past chats
+# Load chat data from the session store into working state.
+def _load_chat(chat_id: str) -> None:
+    chat = st.session_state.chat_store.get(chat_id)
+    if chat:
+        st.session_state.chat_id = chat_id
+        st.session_state.chat_title = chat.get('title') or default_chat_title(chat_id)
+        st.session_state.messages = list(chat.get('messages', []))
+        st.session_state.gemini_history = list(chat.get('gemini_history', []))
+    else:
+        st.session_state.chat_id = chat_id
+        st.session_state.chat_title = default_chat_title(chat_id)
+        st.session_state.messages = []
+        st.session_state.gemini_history = []
+
+
+_load_chat(st.session_state.chat_id)
+
+# Sidebar allows a list of past chats (per-session only)
 with st.sidebar:
     st.write('# Past Chats')
-    if st.session_state.get('chat_id') is None:
-        st.session_state.chat_id = st.selectbox(
-            label='Pick a past chat',
-            options=[new_chat_id] + list(past_chats.keys()),
-            format_func=lambda x: past_chats.get(x, 'New Chat'),
-            placeholder='_',
-        )
-    else:
-        # This will happen the first time AI response comes in
-        st.session_state.chat_id = st.selectbox(
-            label='Pick a past chat',
-            options=[new_chat_id, st.session_state.chat_id] + list(past_chats.keys()),
-            index=1,
-            format_func=lambda x: past_chats.get(x, 'New Chat' if x != st.session_state.chat_id else st.session_state.chat_title),
-            placeholder='_',
-        )
-    # Set or edit title
-    if st.session_state.chat_id in past_chats:
-        st.session_state.chat_title = past_chats[st.session_state.chat_id]
-    else:
-        st.session_state.chat_title = st.session_state.get('chat_title') or default_chat_title(
-            st.session_state.chat_id
-        )
+    past_chats = {cid: data.get('title', default_chat_title(cid)) for cid, data in st.session_state.chat_store.items()}
+    select_options = [st.session_state.chat_id] + [cid for cid in past_chats if cid != st.session_state.chat_id]
+    selected_chat = st.selectbox(
+        label='Pick a past chat',
+        options=select_options,
+        format_func=lambda x: past_chats.get(x, default_chat_title(x)),
+    )
+    if selected_chat != st.session_state.chat_id:
+        _load_chat(selected_chat)
+
+    if st.button('Start new chat'):
+        fresh_chat_id = f'{time.time()}'
+        _load_chat(fresh_chat_id)
 
     new_title = st.text_input(
         'Chat title',
@@ -258,8 +241,11 @@ with st.sidebar:
     )
     if new_title != st.session_state.chat_title:
         st.session_state.chat_title = new_title
-        past_chats[st.session_state.chat_id] = new_title
-        safe_dump(past_chats, 'data/past_chats_list')
+    st.session_state.chat_store[st.session_state.chat_id] = dict(
+        title=st.session_state.chat_title,
+        messages=st.session_state.messages,
+        gemini_history=st.session_state.gemini_history,
+    )
 
 st.write('# Chat with Knitec IQ')
 
@@ -274,27 +260,6 @@ except Exception as exc:
     st.warning(f'Could not read prompt file, using fallback. ({exc})')
     SYSTEM_PROMPT = 'You are Knitec IQ assistant.'
 
-# Chat history (allows to ask multiple questions)
-try:
-    st.session_state.messages = joblib.load(
-        f'data/{st.session_state.chat_id}-st_messages'
-    )
-    st.session_state.gemini_history = joblib.load(
-        f'data/{st.session_state.chat_id}-gemini_messages'
-    )
-    print('old cache')
-except FileNotFoundError:
-    st.session_state.messages = []
-    st.session_state.gemini_history = []
-    if st.session_state.chat_id in past_chats:
-        past_chats.pop(st.session_state.chat_id, None)
-        safe_dump(past_chats, 'data/past_chats_list')
-    print('new_cache made')
-except Exception as exc:
-    st.warning(f'Cached chat history unreadable, starting clean. ({exc})')
-    st.session_state.messages = []
-    st.session_state.gemini_history = []
-    print('new_cache made')
 # Use requested Gemini model
 st.session_state.model = genai.GenerativeModel(
     'gemini-2.5-flash',
@@ -314,15 +279,10 @@ for message in st.session_state.messages:
 
 # React to user input
 if prompt := st.chat_input('Your message here...'):
-    # Save this as a chat for later
-    if st.session_state.chat_id not in past_chats.keys():
-        # If no custom title yet, derive one from the first message.
+    # Save this as a chat for later in this session
+    if st.session_state.chat_id not in st.session_state.chat_store:
         if not st.session_state.chat_title or st.session_state.chat_title == 'New Chat':
-            st.session_state.chat_title = friendly_title_from_prompt(
-                prompt, st.session_state.chat_id
-            )
-        past_chats[st.session_state.chat_id] = st.session_state.chat_title
-        safe_dump(past_chats, 'data/past_chats_list')
+            st.session_state.chat_title = friendly_title_from_prompt(prompt, st.session_state.chat_id)
     # Display user message in chat message container
     with st.chat_message('user'):
         st.markdown(prompt)
@@ -388,14 +348,11 @@ if prompt := st.chat_input('Your message here...'):
             )
         )
         st.session_state.gemini_history = st.session_state.chat.history
-    # Save to file
-    safe_dump(
-        st.session_state.messages,
-        f'data/{st.session_state.chat_id}-st_messages',
-    )
-    safe_dump(
-        st.session_state.gemini_history,
-        f'data/{st.session_state.chat_id}-gemini_messages',
+
+    st.session_state.chat_store[st.session_state.chat_id] = dict(
+        title=st.session_state.chat_title,
+        messages=st.session_state.messages,
+        gemini_history=st.session_state.gemini_history,
     )
 
 st.markdown(
