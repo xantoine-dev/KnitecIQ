@@ -82,7 +82,7 @@ def inject_chat_styles() -> None:
           }
           .block-container {
             max-width: 1080px;
-            padding: 24px 32px 48px;
+            padding: 24px 32px 140px;
           }
           h1 {
             color: var(--text);
@@ -153,6 +153,13 @@ def inject_chat_styles() -> None:
           button:hover {
             transform: translateY(-1px);
             box-shadow: 0 10px 22px rgba(29, 78, 216, 0.16);
+          }
+          .chat-footer-note {
+            margin-top: 12px;
+            padding-bottom: 12px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
           }
         </style>
         """,
@@ -390,3 +397,8 @@ if prompt := st.chat_input('Your message here...'):
         st.session_state.gemini_history,
         f'data/{st.session_state.chat_id}-gemini_messages',
     )
+
+st.markdown(
+    '<div class="chat-footer-note">KnitecIQ can make mistakes—please double-check important information.</div>',
+    unsafe_allow_html=True,
+)
