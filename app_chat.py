@@ -51,9 +51,9 @@ else:
 # ---------------------------------------------------------------------------
 
 load_dotenv()
-GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
+GOOGLE_API_KEY = st.secrets.get('GOOGLE_API_KEY') or os.environ.get('GOOGLE_API_KEY')
 if not GOOGLE_API_KEY:
-    st.error('GOOGLE_API_KEY is not set; please configure your environment.')
+    st.error('GOOGLE_API_KEY is not set; please configure your environment (Streamlit secrets or env var).')
     st.stop()
 genai.configure(api_key=GOOGLE_API_KEY)
 
