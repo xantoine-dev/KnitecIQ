@@ -36,27 +36,21 @@ Primary entry (includes contact intake then chat):
 ```
 streamlit run Contact_Information.py
 ```
-Alternate multipage entry:
-```
-streamlit run app.py
-```
 Direct chat (skips intake):
 ```
 streamlit run app_chat.py
 ```
 Chat page inside the same session:
 ```
-streamlit run pages/02_chat.py
+streamlit run pages/02_Chat_With_KnitecIQ.py
 ```
 
 ### Repository Structure (key files)
 ```
 Contact_Information.py        # primary entry: contact intake then chat
-app.py                        # alternate multipage entry
 app_chat.py                   # chat experience (used by pages wrappers)
 contact_info/                 # modular contact intake page + assets
-pages/02_Chat_with_KnitecIQ.py# page wrapper to run chat as a page
-pages/02_chat.py              # (alternate) page wrapper to run chat as a page
+pages/02_Chat_With_KnitecIQ.py# page wrapper to run chat as a page
 assets/                       # shared assets (e.g., avatar, prompts)
 data/                         # chat history (git-ignored)
 .streamlit/                   # config.toml and local secrets.toml (git-ignored)
