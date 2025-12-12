@@ -245,6 +245,10 @@ with st.sidebar:
     )
 
 st.write('# Chat with Knitec IQ')
+st.info(
+    "I'm Knitec IQ, a chatbot that will guide you through the KniTec Installation Questionnaire, "
+    "asking one question at a time and summarizing your answers."
+)
 
 # Load Knitec IQ instructions as system prompt
 prompt_path = Path('assets/prompts/Knitec_IQ_Instructions_Trimmed.txt')
