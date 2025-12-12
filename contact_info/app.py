@@ -221,6 +221,9 @@ def navigate_to_chat() -> None:
     """
     if hasattr(st, "switch_page"):
         for target in (
+            "pages/02_Chat_With_KnitecIQ.py",
+            "02_Chat_With_KnitecIQ.py",
+            "02_Chat_With_KnitecIQ",
             "pages/02_chat.py",
             "pages/chat.py",
             "app_chat.py",
@@ -238,14 +241,14 @@ def navigate_to_chat() -> None:
     st.markdown(
         """
         <script>
-          // Attempt relative navigation to the chatbot app.
-          const target = window.location.origin + "/app_chat";
+          // Attempt navigation to the chat page.
+          const target = window.location.origin + "/?page=02_Chat_With_KnitecIQ";
           setTimeout(() => { window.location.href = target; }, 300);
         </script>
         """,
         unsafe_allow_html=True,
     )
-    st.info("If you are not redirected, open the chatbot (app_chat.py) in this instance.")
+    st.info("If you are not redirected, open the Chat page (02_Chat_With_KnitecIQ) in this instance.")
 
 
 def main() -> None:
