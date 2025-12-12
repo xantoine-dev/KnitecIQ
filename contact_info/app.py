@@ -237,14 +237,17 @@ def navigate_to_chat() -> None:
     st.markdown(
         """
         <script>
-          // Attempt navigation to the chat page.
-          const target = window.location.origin + "/?page=02_Chat_With_KnitecIQ";
+          // Attempt navigation to the chat page using current path + page query.
+          const target = window.location.origin + window.location.pathname + "?page=02_Chat_With_KnitecIQ";
           setTimeout(() => { window.location.href = target; }, 300);
         </script>
         """,
         unsafe_allow_html=True,
     )
-    st.info("If you are not redirected, open the Chat page (02_Chat_With_KnitecIQ) in this instance.")
+    st.info(
+        "If you are not redirected, open the Chat page (02_Chat_With_KnitecIQ) in this instance."
+    )
+    st.page_link("pages/02_Chat_With_KnitecIQ.py", label="Open chat now", icon="💬")
 
 
 def main() -> None:
