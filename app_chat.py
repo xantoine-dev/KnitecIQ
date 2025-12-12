@@ -218,6 +218,25 @@ def _load_chat(chat_id: str) -> None:
 
 _load_chat(st.session_state.chat_id)
 
+# Seed a friendly intro message once per new chat.
+if not st.session_state.messages:
+    intro_msg = (
+        "I'm Knitec IQ, a chatbot that will guide you through the KniTec Installation "
+        "Questionnaire one question at a time and then summarize your answers."
+    )
+    st.session_state.messages.append(
+        dict(
+            role=MODEL_ROLE,
+            content=intro_msg,
+            avatar=AI_AVATAR_ICON,
+        )
+    )
+    st.session_state.chat_store[st.session_state.chat_id] = dict(
+        title=st.session_state.chat_title,
+        messages=list(st.session_state.messages),
+        chat_history=list(st.session_state.chat_history),
+    )
+
 # Sidebar: past chats disabled for now (per-session only) to avoid navigation bugs.
 # TODO: Re-enable a reliable past-chats selector once state sync issues are resolved.
 with st.sidebar:
@@ -245,10 +264,6 @@ with st.sidebar:
     )
 
 st.write('# Chat with Knitec IQ')
-st.info(
-    "I'm Knitec IQ, a chatbot that will guide you through the KniTec Installation Questionnaire, "
-    "asking one question at a time and summarizing your answers."
-)
 
 # Load Knitec IQ instructions as system prompt
 prompt_path = Path('assets/prompts/Knitec_IQ_Instructions_Trimmed.txt')
