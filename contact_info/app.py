@@ -240,7 +240,7 @@ def navigate_to_chat() -> None:
     # Try queryparam navigation in multipage mode.
     try:
         st.experimental_set_query_params(page=target_slug)
-        st.experimental_rerun()
+        st.rerun()
         return
     except Exception:
         pass
