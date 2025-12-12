@@ -215,9 +215,13 @@ def navigate_to_chat() -> None:
     Try to jump to the chatbot page automatically. Falls back to a JS redirect.
     Works when both pages run in the same Streamlit instance.
     """
+    target_slug = "Chat_with_KnitecIQ"
+    target_path = "pages/02_Chat_With_KnitecIQ.py"
+
     if hasattr(st, "switch_page"):
         for target in (
-            "pages/02_Chat_With_KnitecIQ.py",
+            target_path,
+            target_slug,
             "02_Chat_With_KnitecIQ.py",
             "02_Chat_With_KnitecIQ",
             "pages/02_chat.py",
@@ -233,14 +237,20 @@ def navigate_to_chat() -> None:
             except Exception:
                 continue
 
+    # Try queryparam navigation in multipage mode.
+    try:
+        st.experimental_set_query_params(page=target_slug)
+        st.experimental_rerun()
+        return
+    except Exception:
+        pass
+
     # Fallback: client-side redirect to a likely chatbot route.
+    chat_url = "https://kniteciq-demo.streamlit.app/Chat_with_KnitecIQ"
     st.markdown(
-        """
-        <script>
-          // Attempt navigation to the chat page (works on Streamlit Cloud and local multipage).
-          const target = window.location.origin + "/Chat_with_KnitecIQ";
-          setTimeout(() => { window.location.href = target; }, 300);
-        </script>
+        f"""
+        <meta http-equiv="refresh" content="0; url={chat_url}">
+        <p>Redirecting to chat...</p>
         """,
         unsafe_allow_html=True,
     )
@@ -248,7 +258,7 @@ def navigate_to_chat() -> None:
         "If you are not redirected, open the Chat page (02_Chat_With_KnitecIQ) in this instance."
     )
     st.markdown(
-        '💬 [Open chat now](https://kniteciq-demo.streamlit.app/Chat_with_KnitecIQ) &nbsp;|&nbsp; '
+        f'💬 [Open chat now]({chat_url}) &nbsp;|&nbsp; '
         '[Contact page](https://kniteciq-demo.streamlit.app)',
         unsafe_allow_html=True,
     )
