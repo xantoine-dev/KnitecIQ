@@ -237,8 +237,8 @@ def navigate_to_chat() -> None:
     st.markdown(
         """
         <script>
-          // Attempt navigation to the chat page using current path + page query.
-          const target = window.location.origin + window.location.pathname + "?page=02_Chat_With_KnitecIQ";
+          // Attempt navigation to the chat page (works on Streamlit Cloud and local multipage).
+          const target = window.location.origin + "/Chat_with_KnitecIQ";
           setTimeout(() => { window.location.href = target; }, 300);
         </script>
         """,
@@ -247,7 +247,11 @@ def navigate_to_chat() -> None:
     st.info(
         "If you are not redirected, open the Chat page (02_Chat_With_KnitecIQ) in this instance."
     )
-    st.page_link("pages/02_Chat_With_KnitecIQ.py", label="Open chat now", icon="💬")
+    st.markdown(
+        '💬 [Open chat now](https://kniteciq-demo.streamlit.app/Chat_with_KnitecIQ) &nbsp;|&nbsp; '
+        '[Contact page](https://kniteciq-demo.streamlit.app)',
+        unsafe_allow_html=True,
+    )
 
 
 def main() -> None:
