@@ -19,6 +19,8 @@ HERO_IMAGE = ASSETS_DIR / "images" / "home_background.png"
 LOGO_IMAGE = ASSETS_DIR / "images" / "logo.png"
 CHAT_URL = "https://kniteciq-demo.streamlit.app/Chat_with_KnitecIQ"
 
+st.session_state.setdefault("handoff_modal_shown", False)
+
 FIELD_META: Tuple[Tuple[str, str, str], ...] = (
     ("name", "Name", "Jane Doe"),
     ("address", "Address", "123 Main St"),
@@ -246,6 +248,7 @@ def render_form() -> None:
 
         st.session_state["contact_info"] = sanitized
         st.session_state["contact_info_submitted"] = True
+        st.session_state["handoff_modal_shown"] = True
         st.success("Contact info captured. Knitec IQ is gonna take it from here.")
         show_handoff_modal()
 
@@ -279,11 +282,11 @@ def validate_inputs(values: Dict[str, str]) -> list[str]:
 
 
 def _looks_like_email(text: str) -> bool:
-    return bool(re.fullmatch(r"[^@\\s]+@[^@\\s]+\\.[^@\\s]+", text))
+    return bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", text))
 
 
 def _looks_like_phone(text: str) -> bool:
-    digits = re.sub(r"\\D", "", text)
+    digits = re.sub(r"\D", "", text)
     return 7 <= len(digits) <= 15
 
 
@@ -343,6 +346,9 @@ def navigate_to_chat() -> None:
 
 def main() -> None:
     require_auth()
+    if st.session_state.get("contact_info_submitted") and not st.session_state.get("handoff_modal_shown"):
+        show_handoff_modal()
+        st.session_state["handoff_modal_shown"] = True
     brand_uris = inject_branding()
     render_header(brand_uris["logo"])
     render_hero()
