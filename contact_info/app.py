@@ -129,6 +129,10 @@ def render_hero() -> None:
 
 
 def render_form() -> None:
+    def _clear_form() -> None:
+        for key, _, _ in FIELD_META:
+            st.session_state[f"contact_{key}"] = ""
+
     st.markdown('<div class="form-wrapper">', unsafe_allow_html=True)
     with st.form("knitec_contact_form"):
         col_a, col_b = st.columns(2, gap="medium")
@@ -151,18 +155,10 @@ def render_form() -> None:
         cleared = action_b.form_submit_button(
             "Clear",
             type="secondary",
+            on_click=_clear_form,
         )
 
     st.markdown("</div>", unsafe_allow_html=True)
-
-    if cleared:
-        for key, _, _ in FIELD_META:
-            st.session_state[f"contact_{key}"] = ""
-        # Clear button intentionally does not show a message to keep UI quiet.
-        try:
-            st.rerun()
-        except AttributeError:
-            st.experimental_rerun()
 
     if submitted:
         sanitized = {k: (v or "").strip() for k, v in values.items()}
@@ -191,7 +187,7 @@ def validate_inputs(values: Dict[str, str]) -> list[str]:
         errors.append("State must be a 2-letter code (e.g., WA).")
 
     zip_val = values.get("zip", "")
-    if zip_val and not re.fullmatch(r"\\d{5}(?:-\\d{4})?$", zip_val):
+    if zip_val and not re.fullmatch(r"\d{5}(?:-\d{4})?$", zip_val):
         errors.append("Zip must be 5 digits or ZIP+4 (e.g., 98101 or 98101-1234).")
 
     contact_val = values.get("contact", "")
