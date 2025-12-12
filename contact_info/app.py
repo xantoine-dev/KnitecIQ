@@ -17,6 +17,7 @@ ASSETS_DIR = APP_DIR / "assets"
 CSS_PATH = ASSETS_DIR / "css" / "style.css"
 HERO_IMAGE = ASSETS_DIR / "images" / "home_background.png"
 LOGO_IMAGE = ASSETS_DIR / "images" / "logo.png"
+CHAT_URL = "https://kniteciq-demo.streamlit.app/Chat_with_KnitecIQ"
 
 FIELD_META: Tuple[Tuple[str, str, str], ...] = (
     ("name", "Name", "Jane Doe"),
@@ -128,6 +129,82 @@ def render_hero() -> None:
     )
 
 
+def show_handoff_modal() -> None:
+    """Show a handoff popup with a CTA to open the chat app."""
+    st.markdown(
+        f"""
+        <style>
+          .handoff-modal {{
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }}
+          .handoff-backdrop {{
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(2px);
+          }}
+          .handoff-dialog {{
+            position: relative;
+            width: min(440px, 92vw);
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 26px 24px;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.38);
+            text-align: center;
+          }}
+          .handoff-dialog h3 {{
+            margin: 0 0 10px;
+            color: #0f172a;
+            font-size: 22px;
+            font-weight: 700;
+          }}
+          .handoff-dialog p {{
+            margin: 0 0 18px;
+            color: #475467;
+            font-size: 15px;
+          }}
+          .handoff-cta {{
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 13px 20px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            background: #107a57;
+            color: #ffffff !important;
+            text-decoration: none !important;
+            font-size: 16px;
+            gap: 8px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+            min-width: 170px;
+          }}
+          .handoff-cta:visited {{ color: #ffffff !important; }}
+          .handoff-cta:hover {{
+            transform: translateY(-1px);
+            box-shadow: 0 14px 34px rgba(16, 122, 87, 0.28);
+          }}
+        </style>
+        <div class="handoff-modal">
+          <div class="handoff-backdrop"></div>
+          <div class="handoff-dialog">
+            <h3>Knitec IQ is gonna take it from here</h3>
+            <p>We have your details. Jump into chat to finish the questionnaire.</p>
+            <a class="handoff-cta" href="{CHAT_URL}">Let's chat →</a>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_form() -> None:
     def _clear_form() -> None:
         for key, _, _ in FIELD_META:
@@ -169,8 +246,8 @@ def render_form() -> None:
 
         st.session_state["contact_info"] = sanitized
         st.session_state["contact_info_submitted"] = True
-        st.success("Contact info captured. Redirecting to chatbot...")
-        navigate_to_chat()
+        st.success("Contact info captured. Knitec IQ is gonna take it from here.")
+        show_handoff_modal()
 
 
 def validate_inputs(values: Dict[str, str]) -> list[str]:
