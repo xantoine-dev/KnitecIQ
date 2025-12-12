@@ -215,7 +215,7 @@ def navigate_to_chat() -> None:
     Try to jump to the chatbot page automatically. Falls back to a JS redirect.
     Works when both pages run in the same Streamlit instance.
     """
-    target_slug = "Chat_with_KnitecIQ"
+    target_slug = "Chat_With_KnitecIQ"  # Keep casing aligned with page filename
     target_path = "pages/02_Chat_With_KnitecIQ.py"
 
     if hasattr(st, "switch_page"):
@@ -246,7 +246,7 @@ def navigate_to_chat() -> None:
         pass
 
     # Fallback: client-side redirect to a likely chatbot route.
-    chat_url = "https://kniteciq-demo.streamlit.app/Chat_with_KnitecIQ"
+    chat_url = "https://kniteciq-demo.streamlit.app/Chat_With_KnitecIQ"
     st.markdown(
         f"""
         <meta http-equiv="refresh" content="0; url={chat_url}">
