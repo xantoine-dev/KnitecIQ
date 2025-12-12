@@ -218,8 +218,10 @@ def _load_chat(chat_id: str) -> None:
 
 _load_chat(st.session_state.chat_id)
 
-# Seed a friendly intro message once per new chat.
-if not st.session_state.messages:
+def seed_intro_message() -> None:
+    """Ensure a visible intro message and matching history on fresh chats."""
+    if st.session_state.messages:
+        return
     intro_msg = (
         "I'm Knitec IQ, a chatbot that will guide you through the KniTec Installation "
         "Questionnaire one question at a time and then summarize your answers."
@@ -231,11 +233,15 @@ if not st.session_state.messages:
             avatar=AI_AVATAR_ICON,
         )
     )
+    st.session_state.chat_history.append({"role": MODEL_ROLE, "content": intro_msg})
     st.session_state.chat_store[st.session_state.chat_id] = dict(
         title=st.session_state.chat_title,
         messages=list(st.session_state.messages),
         chat_history=list(st.session_state.chat_history),
     )
+
+
+seed_intro_message()
 
 # Sidebar: past chats disabled for now (per-session only) to avoid navigation bugs.
 # TODO: Re-enable a reliable past-chats selector once state sync issues are resolved.
@@ -301,14 +307,18 @@ if prompt := st.chat_input('Your message here...'):
             content=prompt,
         )
     )
+    # Persist user turn immediately to avoid losing the first message on rerun.
+    st.session_state.chat_store[st.session_state.chat_id] = dict(
+        title=st.session_state.chat_title,
+        messages=list(st.session_state.messages),
+        chat_history=list(st.session_state.chat_history),
+    )
     ## Send message to AI
     try:
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=[{'role': 'system', 'content': SYSTEM_PROMPT}] + st.session_state.chat_history,
             stream=True,
-            # Request faster routing when available.
-            service_tier='priority',
         )
     except OpenAIError as exc:
         st.error(f'OpenAI API error: {exc}')
