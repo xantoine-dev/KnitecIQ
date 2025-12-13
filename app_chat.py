@@ -55,7 +55,15 @@ if not OPENAI_API_KEY:
     st.error('OPENAI_API_KEY is not set; please configure your environment (Streamlit secrets or env var).')
     st.stop()
 OPENAI_MODEL = os.environ.get('OPENAI_MODEL') or 'gpt-4.1-nano'
-client = OpenAI(api_key=OPENAI_API_KEY)
+
+
+@st.cache_resource(show_spinner=False)
+def get_openai_client(api_key: str) -> OpenAI:
+    """Cache the OpenAI client so HTTP connections can be reused across reruns."""
+    return OpenAI(api_key=api_key)
+
+
+client = get_openai_client(OPENAI_API_KEY)
 
 MODEL_ROLE = 'assistant'
 AI_AVATAR_ICON = str(Path('assets/Knitec_IQ_avatar.png'))
@@ -313,34 +321,23 @@ if prompt := st.chat_input('Your message here...'):
         messages=list(st.session_state.messages),
         chat_history=list(st.session_state.chat_history),
     )
-    ## Send message to AI
-    try:
-        response = client.chat.completions.create(
-            model=OPENAI_MODEL,
-            messages=[{'role': 'system', 'content': SYSTEM_PROMPT}] + st.session_state.chat_history,
-            stream=True,
-        )
-    except OpenAIError as exc:
-        st.error(f'OpenAI API error: {exc}')
-        response = None
+    # Display assistant response immediately with a "thinking" placeholder,
+    # then stream tokens into the same message bubble.
+    full_response = ''
+    with st.chat_message(
+        name=MODEL_ROLE,
+        avatar=AI_AVATAR_ICON,
+    ):
+        message_placeholder = st.empty()
+        message_placeholder.markdown('_Knitec IQ is thinking..._')
 
-    if response is None:
-        st.session_state.messages.append(
-            dict(
-                role=MODEL_ROLE,
-                content='(No response due to API error.)',
-                avatar=AI_AVATAR_ICON,
+        try:
+            response = client.chat.completions.create(
+                model=OPENAI_MODEL,
+                messages=[{'role': 'system', 'content': SYSTEM_PROMPT}] + st.session_state.chat_history,
+                stream=True,
             )
-        )
-    else:
-        # Display assistant response in chat message container
-        with st.chat_message(
-            name=MODEL_ROLE,
-            avatar=AI_AVATAR_ICON,
-        ):
-            message_placeholder = st.empty()
-            full_response = ''
-            # Streams in a chunk at a time
+
             for chunk in response:
                 delta = chunk.choices[0].delta
                 content_piece = getattr(delta, 'content', None) or ''
@@ -351,17 +348,24 @@ if prompt := st.chat_input('Your message here...'):
                 else:
                     text_piece = ''.join(getattr(part, 'text', '') or str(part) for part in content_piece)
                 full_response += text_piece
-                message_placeholder.write(full_response + '▌')
-            message_placeholder.write(full_response)
+                message_placeholder.markdown(full_response + '▌')
 
-        # Add assistant response to chat history
-        st.session_state.messages.append(
-            dict(
-                role=MODEL_ROLE,
-                content=full_response,
-                avatar=AI_AVATAR_ICON,
-            )
+            if not full_response:
+                full_response = '(No response.)'
+            message_placeholder.markdown(full_response)
+        except OpenAIError as exc:
+            full_response = '(No response due to API error.)'
+            message_placeholder.markdown(full_response)
+            st.error(f'OpenAI API error: {exc}')
+
+    st.session_state.messages.append(
+        dict(
+            role=MODEL_ROLE,
+            content=full_response,
+            avatar=AI_AVATAR_ICON,
         )
+    )
+    if full_response and full_response != '(No response due to API error.)':
         st.session_state.chat_history.append({'role': 'assistant', 'content': full_response})
 
     st.session_state.chat_store[st.session_state.chat_id] = dict(
