@@ -251,6 +251,26 @@ def seed_intro_message() -> None:
 
 seed_intro_message()
 
+
+def _extract_text_piece(content_piece) -> str:
+    """Normalize OpenAI delta content to plain text."""
+    if isinstance(content_piece, str):
+        return content_piece
+    parts = []
+    try:
+        for part in content_piece:
+            text_val = getattr(part, 'text', None)
+            if text_val is None:
+                parts.append(str(part))
+                continue
+            if hasattr(text_val, 'value'):
+                parts.append(str(getattr(text_val, 'value')))
+            else:
+                parts.append(str(text_val))
+        return ''.join(parts)
+    except Exception:
+        return str(content_piece)
+
 # Sidebar: past chats disabled for now (per-session only) to avoid navigation bugs.
 # TODO: Re-enable a reliable past-chats selector once state sync issues are resolved.
 with st.sidebar:
@@ -343,10 +363,7 @@ if prompt := st.chat_input('Your message here...'):
                 content_piece = getattr(delta, 'content', None) or ''
                 if not content_piece:
                     continue
-                if isinstance(content_piece, str):
-                    text_piece = content_piece
-                else:
-                    text_piece = ''.join(getattr(part, 'text', '') or str(part) for part in content_piece)
+                text_piece = _extract_text_piece(content_piece)
                 full_response += text_piece
                 message_placeholder.markdown(full_response + '▌')
 
