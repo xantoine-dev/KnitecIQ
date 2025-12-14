@@ -42,19 +42,19 @@ streamlit run app_chat.py
 ```
 Chat page inside the same session:
 ```
-streamlit run pages/02_Chat_With_KnitecIQ.py
+streamlit run pages/02_Chat_with_KnitecIQ.py
 ```
 
 ### Repository Structure (key files)
 ```
-Contact_Information.py        # primary entry: contact intake then chat
-app_chat.py                   # chat experience (used by pages wrappers)
-contact_info/                 # modular contact intake page + assets
-pages/02_Chat_With_KnitecIQ.py# page wrapper to run chat as a page
-assets/                       # shared assets (e.g., avatar, prompts)
-data/                         # (legacy) chat cache location, git-ignored
-.streamlit/                   # config.toml and local secrets.toml (git-ignored)
-.env                          # OPENAI_API_KEY (git-ignored)
+Contact_Information.py         # primary entry: contact intake then chat
+app_chat.py                    # chat experience (used by pages wrappers)
+contact_info/                  # modular contact intake page + assets
+pages/02_Chat_with_KnitecIQ.py # page wrapper to run chat as a page
+assets/                        # shared assets (e.g., avatar, prompts)
+data/                          # (legacy) chat cache location, git-ignored
+.streamlit/                    # config.toml and local secrets.toml (git-ignored)
+.env                           # OPENAI_API_KEY (git-ignored)
 ```
 
 ## How it Works
@@ -66,6 +66,7 @@ data/                         # (legacy) chat cache location, git-ignored
 5. Past chat list is pruned automatically if history files are missing.
 
 ## Validation (manual)
+
 - Contact form: verified required-field enforcement, state format (2 letters), ZIP/ZIP+4, email/phone validation, and clear/submit behaviors.
 - Navigation: submit triggers redirect to chat within the same Streamlit session.
 - Chat: message send/receive works with stored histories; past chats prunes missing sessions.

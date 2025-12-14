@@ -1,6 +1,6 @@
 """
 Entry point to run the contact info page as the main app.
-Usage: streamlit run app.py
+Usage: streamlit run Contact_Information.py
 """
 from contact_info.app import main
 
