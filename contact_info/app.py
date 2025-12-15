@@ -55,7 +55,6 @@ def require_auth() -> None:
         auth_config["cookie"]["name"],
         auth_config["cookie"]["key"],
         auth_config["cookie"]["expiry_days"],
-        auth_config.get("preauthorized", {}),
     )
 
     name, auth_status, username = authenticator.login(

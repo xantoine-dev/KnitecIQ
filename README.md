@@ -29,6 +29,7 @@ pip install -r requirements.txt
 3) Secrets and keys:
 - Create `.streamlit/secrets.toml` with `auth` credentials (see example in contact_info/app.py expectations).
 - Add `OPENAI_API_KEY=...` to `.streamlit/secrets.toml` (preferred) or to `.env` in the repo root. `.env` is git-ignored.
+- A sample template is available at `.streamlit/secrets.example.toml` (uses hashed passwords; no `pre_authorized` config is needed).
 
 ### Run
 
