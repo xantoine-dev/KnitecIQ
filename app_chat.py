@@ -31,13 +31,13 @@ authenticator = stauth.Authenticate(
     auth_config['cookie']['name'],
     auth_config['cookie']['key'],
     auth_config['cookie']['expiry_days'],
-    auth_config.get('preauthorized', {}),
 )
 
-name, auth_status, username = authenticator.login(
+authenticator.login(
     fields={'Form name': 'Login'},
     location='main',
 )
+auth_status = st.session_state.get('authentication_status')
 
 if auth_status is False:
     st.error('Invalid username or password.')
