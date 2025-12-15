@@ -57,10 +57,11 @@ def require_auth() -> None:
         auth_config["cookie"]["expiry_days"],
     )
 
-    name, auth_status, username = authenticator.login(
+    authenticator.login(
         fields={"Form name": "Login"},
         location="main",
     )
+    auth_status = st.session_state.get("authentication_status")
 
     if auth_status is False:
         st.error("Invalid username or password.")
