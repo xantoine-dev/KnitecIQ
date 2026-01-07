@@ -1,3 +1,4 @@
+# This file is loaded by Streamlit Pages. Do not run directly.
 """
 Streamlit page wrapper to run the existing chatbot.
 """

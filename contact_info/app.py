@@ -8,6 +8,8 @@ from typing import Dict, Tuple
 import streamlit as st
 import streamlit_authenticator as stauth
 
+from state import CONTACT_INFO_KEY, CONTACT_INFO_SUBMITTED_KEY
+
 
 # Keep this page self-contained so it can be dropped in as a module.
 st.set_page_config(page_title="Knitec IQ | Contact Info", layout="wide")
@@ -17,9 +19,7 @@ ASSETS_DIR = APP_DIR / "assets"
 CSS_PATH = ASSETS_DIR / "css" / "style.css"
 HERO_IMAGE = ASSETS_DIR / "images" / "home_background.png"
 LOGO_IMAGE = ASSETS_DIR / "images" / "logo.png"
-CHAT_URL = "https://kniteciq-demo.streamlit.app/Chat_with_KnitecIQ"
 
-st.session_state.setdefault("handoff_modal_shown", False)
 
 FIELD_META: Tuple[Tuple[str, str, str], ...] = (
     ("name", "Name", "Jane Doe"),
@@ -124,84 +124,11 @@ def render_hero() -> None:
           <div class="hero-overlay"></div>
           <div class="hero-content">
             <h1>Property &amp; Contact Information</h1>
+            <p>This tool collects installation details and guides you through the KniTec questionnaire step by step.</p>
+            <p>Your answers are summarized automatically at the end.</p>
+            <p>Step 1 of 2</p>
           </div>
         </section>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def show_handoff_modal() -> None:
-    """Show a handoff popup with a CTA to open the chat app."""
-    st.markdown(
-        f"""
-        <style>
-          .handoff-modal {{
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }}
-          .handoff-backdrop {{
-            position: absolute;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.55);
-            backdrop-filter: blur(2px);
-          }}
-          .handoff-dialog {{
-            position: relative;
-            width: min(440px, 92vw);
-            background: #ffffff;
-            border-radius: 18px;
-            padding: 26px 24px;
-            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.38);
-            text-align: center;
-          }}
-          .handoff-dialog h3 {{
-            margin: 0 0 10px;
-            color: #0f172a;
-            font-size: 22px;
-            font-weight: 700;
-          }}
-          .handoff-dialog p {{
-            margin: 0 0 18px;
-            color: #475467;
-            font-size: 15px;
-          }}
-          .handoff-cta {{
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 13px 20px;
-            border-radius: 12px;
-            border: 1px solid transparent;
-            background: #107a57;
-            color: #ffffff !important;
-            text-decoration: none !important;
-            font-size: 16px;
-            gap: 8px;
-            font-weight: 700;
-            letter-spacing: 0.01em;
-            cursor: pointer;
-            transition: transform 0.12s ease, box-shadow 0.12s ease;
-            min-width: 170px;
-          }}
-          .handoff-cta:visited {{ color: #ffffff !important; }}
-          .handoff-cta:hover {{
-            transform: translateY(-1px);
-            box-shadow: 0 14px 34px rgba(16, 122, 87, 0.28);
-          }}
-        </style>
-        <div class="handoff-modal">
-          <div class="handoff-backdrop"></div>
-          <div class="handoff-dialog">
-            <h3>Knitec IQ is gonna take it from here</h3>
-            <p>We have your details. Jump into chat to finish the questionnaire.</p>
-            <a class="handoff-cta" href="{CHAT_URL}">Let's chat →</a>
-          </div>
-        </div>
         """,
         unsafe_allow_html=True,
     )
@@ -246,11 +173,18 @@ def render_form() -> None:
             st.error("Please fix the following:\n- " + "\n- ".join(errors))
             return
 
-        st.session_state["contact_info"] = sanitized
-        st.session_state["contact_info_submitted"] = True
-        st.session_state["handoff_modal_shown"] = True
-        st.success("Contact info captured. Knitec IQ is gonna take it from here.")
-        show_handoff_modal()
+        st.session_state[CONTACT_INFO_KEY] = sanitized
+        st.session_state[CONTACT_INFO_SUBMITTED_KEY] = True
+        st.success("Contact info captured. Continue to chat when you are ready.")
+
+
+def render_continue_to_chat() -> None:
+    """Show an explicit CTA to move to the chat page."""
+    if not st.session_state.get(CONTACT_INFO_SUBMITTED_KEY):
+        return
+    st.info("Ready to continue? Open the chat when you are ready.")
+    if st.button("Continue to Chat", type="primary"):
+        st.switch_page("pages/Chat_with_KnitecIQ.py")
 
 
 def validate_inputs(values: Dict[str, str]) -> list[str]:
@@ -290,69 +224,13 @@ def _looks_like_phone(text: str) -> bool:
     return 7 <= len(digits) <= 15
 
 
-def navigate_to_chat() -> None:
-    """
-    Try to jump to the chatbot page automatically. Falls back to a JS redirect.
-    Works when both pages run in the same Streamlit instance.
-    """
-    target_slug = "Chat_with_KnitecIQ"  # Keep casing aligned with page filename
-    target_path = "pages/02_Chat_with_KnitecIQ.py"
-
-    if hasattr(st, "switch_page"):
-        for target in (
-            target_path,
-            target_slug,
-            "02_Chat_with_KnitecIQ.py",
-            "02_Chat_with_KnitecIQ",
-            "pages/02_chat.py",
-            "pages/chat.py",
-            "app_chat.py",
-            "app_chat",
-            "../app_chat.py",
-            "../app_chat",
-        ):
-            try:
-                st.switch_page(target)
-                return
-            except Exception:
-                continue
-
-    # Try queryparam navigation in multipage mode.
-    try:
-        st.experimental_set_query_params(page=target_slug)
-        st.rerun()
-        return
-    except Exception:
-        pass
-
-    # Fallback: client-side redirect to a likely chatbot route.
-    chat_url = CHAT_URL
-    st.markdown(
-        f"""
-        <meta http-equiv="refresh" content="0; url={chat_url}">
-        <p>Redirecting to chat...</p>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.info(
-        "If you are not redirected, open the Chat page (02_Chat_with_KnitecIQ) in this instance."
-    )
-    st.markdown(
-        f'💬 [Open chat now]({chat_url}) &nbsp;|&nbsp; '
-        '[Contact page](https://kniteciq-demo.streamlit.app)',
-        unsafe_allow_html=True,
-    )
-
-
 def main() -> None:
     require_auth()
-    if st.session_state.get("contact_info_submitted") and not st.session_state.get("handoff_modal_shown"):
-        show_handoff_modal()
-        st.session_state["handoff_modal_shown"] = True
     brand_uris = inject_branding()
     render_header(brand_uris["logo"])
     render_hero()
     render_form()
+    render_continue_to_chat()
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 """
-Entry point to run the contact info page as the main app.
-Usage: streamlit run Contact_Information.py
+Legacy entrypoint for the contact info page.
+Use app.py to run the multipage app.
 """
 from contact_info.app import main
 

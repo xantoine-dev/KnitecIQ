@@ -33,25 +33,23 @@ pip install -r requirements.txt
 
 ### Run
 
-Primary entry (includes contact intake then chat):
+Only supported entrypoint:
 ```
-streamlit run Contact_Information.py
+streamlit run app.py
 ```
-Direct chat (skips intake):
-```
-streamlit run app_chat.py
-```
-Chat page inside the same session:
-```
-streamlit run pages/02_Chat_with_KnitecIQ.py
-```
+Do not run these directly (multipage navigation will break):
+- `Contact_Information.py`
+- `app_chat.py`
+- files under `pages/`
+Use the sidebar to open the `Chat_with_KnitecIQ` page after completing the intake form.
 
 ### Repository Structure (key files)
 ```
-Contact_Information.py         # primary entry: contact intake then chat
+app.py                         # primary entry: contact intake then chat
+Contact_Information.py         # legacy entrypoint (do not run directly)
 app_chat.py                    # chat experience (used by pages wrappers)
 contact_info/                  # modular contact intake page + assets
-pages/02_Chat_with_KnitecIQ.py # page wrapper to run chat as a page
+pages/Chat_with_KnitecIQ.py    # page wrapper to run chat as a page
 assets/                        # shared assets (e.g., avatar, prompts)
 data/                          # (legacy) chat cache location, git-ignored
 .streamlit/                    # config.toml and local secrets.toml (git-ignored)
@@ -62,12 +60,12 @@ data/                          # (legacy) chat cache location, git-ignored
 
 1. User signs in via `streamlit-authenticator` (secrets-driven).
 2. Contact intake form validates required fields (name, address, city, state, zip, contact) and formats (2-letter state, ZIP/ZIP+4, email/phone).
-3. On successful submit, user is redirected to the chat page.
+3. On successful submit, user clicks Continue to Chat to switch to the chat page.
 4. Chat uses OpenAI with the KniTec prompt; history stays in the current browser session and is not shared across users.
 5. Past chat list is pruned automatically if history files are missing.
 
 ## Validation (manual)
 
 - Contact form: verified required-field enforcement, state format (2 letters), ZIP/ZIP+4, email/phone validation, and clear/submit behaviors.
-- Navigation: submit triggers redirect to chat within the same Streamlit session.
+- Navigation: continue button switches to chat within the same Streamlit session.
 - Chat: message send/receive works with stored histories; past chats prunes missing sessions.

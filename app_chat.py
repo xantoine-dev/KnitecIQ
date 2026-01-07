@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from openai import OpenAI, OpenAIError
 import streamlit_authenticator as stauth
 
+from state import CONTACT_INFO_KEY, CONTACT_INFO_SUBMITTED_KEY, CHAT_MESSAGES_KEY
+
 # --- Authentication gate ----------------------------------------------------
 auth_config = st.secrets.get('auth')
 if not auth_config:
@@ -75,10 +77,22 @@ if 'chat_id' not in st.session_state:
     st.session_state.chat_id = f'{time.time()}'
 if 'chat_title' not in st.session_state:
     st.session_state.chat_title = 'New Chat'
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
+if CHAT_MESSAGES_KEY not in st.session_state:
+    st.session_state[CHAT_MESSAGES_KEY] = []
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
+
+MAX_MESSAGES = 40
+
+CONTACT_FIELD_LABELS = (
+    ("Name", "name"),
+    ("Address", "address"),
+    ("City", "city"),
+    ("State", "state"),
+    ("Zip", "zip"),
+    ("Contact", "contact"),
+    ("Contact 2", "contact2"),
+)
 
 
 def inject_chat_styles() -> None:
@@ -215,12 +229,12 @@ def _load_chat(chat_id: str) -> None:
     if chat:
         st.session_state.chat_id = chat_id
         st.session_state.chat_title = chat.get('title') or default_chat_title(chat_id)
-        st.session_state.messages = list(chat.get('messages', []))  # copy to avoid aliasing
+        st.session_state[CHAT_MESSAGES_KEY] = list(chat.get('messages', []))  # copy to avoid aliasing
         st.session_state.chat_history = list(chat.get('chat_history', []))  # copy to avoid aliasing
     else:
         st.session_state.chat_id = chat_id
         st.session_state.chat_title = default_chat_title(chat_id)
-        st.session_state.messages = []
+        st.session_state[CHAT_MESSAGES_KEY] = []
         st.session_state.chat_history = []
 
 
@@ -228,28 +242,65 @@ _load_chat(st.session_state.chat_id)
 
 def seed_intro_message() -> None:
     """Ensure a visible intro message and matching history on fresh chats."""
-    if st.session_state.messages:
+    if st.session_state[CHAT_MESSAGES_KEY]:
         return
     intro_msg = (
-        "I'm Knitec IQ, a chatbot that will guide you through the KniTec Installation "
-        "Questionnaire one question at a time and then summarize your answers."
+        "I’ll guide you through the KniTec Installation Questionnaire, one question at a time.\n\n"
+        "First question: How many floors does your building have?"
     )
-    st.session_state.messages.append(
+    st.session_state[CHAT_MESSAGES_KEY].append(
         dict(
             role=MODEL_ROLE,
             content=intro_msg,
             avatar=AI_AVATAR_ICON,
         )
     )
+    st.session_state[CHAT_MESSAGES_KEY] = st.session_state[CHAT_MESSAGES_KEY][-MAX_MESSAGES:]
     st.session_state.chat_history.append({"role": MODEL_ROLE, "content": intro_msg})
     st.session_state.chat_store[st.session_state.chat_id] = dict(
         title=st.session_state.chat_title,
-        messages=list(st.session_state.messages),
+        messages=list(st.session_state[CHAT_MESSAGES_KEY]),
         chat_history=list(st.session_state.chat_history),
     )
 
 
 seed_intro_message()
+
+def _sanitize_contact_value(value: str) -> str:
+    """Normalize contact values for safe prompt injection."""
+    cleaned = " ".join((value or "").split())
+    return cleaned.strip()
+
+
+def build_system_prompt(base_prompt: str) -> str:
+    """Append known contact info to the system prompt when available."""
+    contact_info = st.session_state.get(CONTACT_INFO_KEY) or {}
+    rows = []
+    for label, key in CONTACT_FIELD_LABELS:
+        value = _sanitize_contact_value(contact_info.get(key, ""))
+        if value:
+            rows.append(f"- {label}: {value}")
+    if not rows:
+        return base_prompt
+    contact_block = "Known contact info:\n" + "\n".join(rows)
+    return f"{base_prompt}\n\n{contact_block}"
+
+
+def render_contact_info() -> None:
+    """Show captured contact info inside the chat UI."""
+    contact_info = st.session_state.get(CONTACT_INFO_KEY)
+    if not contact_info:
+        return
+    rows = []
+    for label, key in CONTACT_FIELD_LABELS:
+        value = _sanitize_contact_value(contact_info.get(key, ""))
+        if value:
+            rows.append((label, value))
+    if not rows:
+        return
+    with st.expander("Contact info", expanded=True):
+        for label, value in rows:
+            st.markdown(f"**{label}:** {value}")
 
 
 def _extract_text_piece(content_piece) -> str:
@@ -279,10 +330,13 @@ with st.sidebar:
         fresh_chat_id = f'{time.time()}'
         st.session_state.chat_store[st.session_state.chat_id] = dict(
             title=st.session_state.chat_title,
-            messages=list(st.session_state.messages),
+            messages=list(st.session_state[CHAT_MESSAGES_KEY]),
             chat_history=list(st.session_state.chat_history),
         )
         _load_chat(fresh_chat_id)
+    if st.button('🔄 Restart questionnaire'):
+        st.session_state.clear()
+        st.switch_page('app.py')
 
     st.text_input(
         'Chat title',
@@ -293,11 +347,15 @@ with st.sidebar:
     )
     st.session_state.chat_store[st.session_state.chat_id] = dict(
         title=st.session_state.chat_title,
-        messages=list(st.session_state.messages),
+        messages=list(st.session_state[CHAT_MESSAGES_KEY]),
         chat_history=list(st.session_state.chat_history),
     )
 
 st.write('# Chat with Knitec IQ')
+if not st.session_state.get(CONTACT_INFO_SUBMITTED_KEY):
+    st.warning("No contact info found. You can still chat, but answers may be less tailored.")
+st.caption('Step 2 of 2')
+render_contact_info()
 
 # Load Knitec IQ instructions as system prompt
 prompt_path = Path('assets/prompts/Knitec_IQ_Instructions_Trimmed.txt')
@@ -309,9 +367,10 @@ except FileNotFoundError:
 except Exception as exc:
     st.warning(f'Could not read prompt file, using fallback. ({exc})')
     SYSTEM_PROMPT = 'You are Knitec IQ assistant.'
+SYSTEM_PROMPT = build_system_prompt(SYSTEM_PROMPT)
 
 # Display chat messages from history on app rerun
-for message in st.session_state.messages:
+for message in st.session_state[CHAT_MESSAGES_KEY]:
     with st.chat_message(
         name=message['role'],
         avatar=message.get('avatar'),
@@ -329,16 +388,17 @@ if prompt := st.chat_input('Your message here...'):
     with st.chat_message('user'):
         st.markdown(prompt)
     # Add user message to chat history
-    st.session_state.messages.append(
+    st.session_state[CHAT_MESSAGES_KEY].append(
         dict(
             role='user',
             content=prompt,
         )
     )
+    st.session_state[CHAT_MESSAGES_KEY] = st.session_state[CHAT_MESSAGES_KEY][-MAX_MESSAGES:]
     # Persist user turn immediately to avoid losing the first message on rerun.
     st.session_state.chat_store[st.session_state.chat_id] = dict(
         title=st.session_state.chat_title,
-        messages=list(st.session_state.messages),
+        messages=list(st.session_state[CHAT_MESSAGES_KEY]),
         chat_history=list(st.session_state.chat_history),
     )
     # Display assistant response immediately with a "thinking" placeholder,
@@ -375,19 +435,20 @@ if prompt := st.chat_input('Your message here...'):
             message_placeholder.markdown(full_response)
             st.error(f'OpenAI API error: {exc}')
 
-    st.session_state.messages.append(
+    st.session_state[CHAT_MESSAGES_KEY].append(
         dict(
             role=MODEL_ROLE,
             content=full_response,
             avatar=AI_AVATAR_ICON,
         )
     )
+    st.session_state[CHAT_MESSAGES_KEY] = st.session_state[CHAT_MESSAGES_KEY][-MAX_MESSAGES:]
     if full_response and full_response != '(No response due to API error.)':
         st.session_state.chat_history.append({'role': 'assistant', 'content': full_response})
 
     st.session_state.chat_store[st.session_state.chat_id] = dict(
         title=st.session_state.chat_title,
-        messages=list(st.session_state.messages),
+        messages=list(st.session_state[CHAT_MESSAGES_KEY]),
         chat_history=list(st.session_state.chat_history),
     )
 
